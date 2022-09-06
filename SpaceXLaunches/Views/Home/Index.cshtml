@@ -1,0 +1,90 @@
+﻿@{
+    ViewData["Title"] = "SpaceX_Launches";
+}
+
+
+    <div class="container-fluid">
+        <div class="text-center">
+            <h1 class="display-4">Launches of SpaceX</h1>
+            <p>Check out what SpaceX is up to with their launches!</p>
+        </div>
+
+        <div class="body m-4">
+            <div class="table-response">
+                <table class="table table hover " id="launchTable" cellspacing="0">
+                    <thead class="bg-warning">
+                        <tr>
+                            <th class="th-md" style="text-align: center">Launch Date</th>
+                            <th class="th-md" style="text-align: center">Launch Time (CDT/CST)</th>
+                            <th class="th-md" style="text-align: center">Rocket Name</th>
+                            <th class="th-md" style="text-align: center">Launch Success</th>
+                            <th class="th-md" style="text-align: center">Payload Mass (kg)</th>
+                            <th class="th-md" style="text-align: center">Payload Rank</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var data in ViewBag.launchData)
+                        {
+                            <tr>
+                                <td>
+                                    @data.LaunchDate.ToString("MM.dd.yyy")
+                                </td>
+                                <td>
+                                    @data.LaunchTime
+                                </td>
+                                <td>
+                                    @data.RocketName
+                                </td>
+                                <td>
+                                    @data.LaunchStatus
+                                </td>
+                                <td>
+                                    @if (data.PayloadMass != 0)
+                                        @data.PayloadMass
+
+
+
+                                    </td>
+                                    <td id="payLoadRank">
+                                    @if (data.PayloadRank != 0)
+                                        @data.PayloadRank
+
+
+
+
+                                    </td>
+                                </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+ 
+    
+    <!-- JavaScript Bundle with Popper -->
+
+    @*@await RenderSectionAsync("Scripts", required: false)*@
+    <script>
+
+        $(document).ready(function () {
+            $('#launchTable').DataTable(
+                {
+                    columnDefs: [
+                        { orderable: false, targets: 0, 1, 2, 3, 4, 5}
+                    ]
+
+                });
+        });
+    </script>
