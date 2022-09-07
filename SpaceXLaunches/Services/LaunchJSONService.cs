@@ -14,7 +14,8 @@ namespace SpaceXLaunches.Services
         {
 
 
-            var launchData = new List<Launch>();
+            List<Launch> launchData = new ();
+            List<Launch> orderedLaunchData = new ();
 
             List<RootLaunch> rootLaunches = new();
             List<Payload> payloads = new();
@@ -24,25 +25,29 @@ namespace SpaceXLaunches.Services
             try
             {
 
-                var webRequest = WebRequest.Create("https://api.spacexdata.com/v4/launches") as HttpWebRequest;
-                if (webRequest == null)
-                {
-                    return launchData;
-                }
+                //var webRequest = WebRequest.Create("https://api.spacexdata.com/v4/launches") as HttpWebRequest;
+                //if (webRequest == null)
+                //{
+                //    return launchData;
+                //}
 
-                webRequest.ContentType = "application/json";
-                webRequest.UserAgent = "Nothing";
+                //webRequest.ContentType = "application/json";
+                //webRequest.UserAgent = "Nothing";
 
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = await client.GetAsync("https://api.spacexdata.com/v5/launches");
+                response.EnsureSuccessStatusCode();
+                var responseBody = await response.Content.ReadAsStringAsync();
+                rootLaunches = JsonConvert.DeserializeObject<List<RootLaunch>>(responseBody);
 
-
-                using (var response = await webRequest.GetResponseAsync())
-                {
-                    using (var responseStream = new StreamReader(response.GetResponseStream()))
-                    {
-                        var launchesAsJson = await responseStream.ReadToEndAsync();
-                        rootLaunches = JsonConvert.DeserializeObject<List<RootLaunch>>(launchesAsJson);
-                    }
-                }
+                //using (var response = await webRequest.GetResponseAsync())
+                //{
+                //    using (var responseStream = new StreamReader(response.GetResponseStream()))
+                //    {
+                //        var launchesAsJson = await responseStream.ReadToEndAsync();
+                //        rootLaunches = JsonConvert.DeserializeObject<List<RootLaunch>>(launchesAsJson);
+                //    }
+                //}
 
 
 
@@ -114,16 +119,23 @@ namespace SpaceXLaunches.Services
 
 
 
-                launchData = launchData.OrderByDescending(x => x.LaunchDate).ToList();
+                
 
 
+            }
+            catch(WebException ex)
+            {
+                Console.WriteLine(ex);
             }
             catch (Exception e)
             {
                 Console.WriteLine(e);
 
             }
-                return launchData;
+
+            orderedLaunchData = launchData.OrderByDescending(x => x.LaunchDate).ToList();
+
+            return orderedLaunchData;
 
         }
 
@@ -133,29 +145,36 @@ namespace SpaceXLaunches.Services
             var rootPayloads = new List<RootPayload>();
             var payloads = new List<Payload>();
 
-            var webRequest = WebRequest.Create("https://api.spacexdata.com/v4/payloads") as HttpWebRequest;
-            if (webRequest == null)
-            {
-                return payloads;
-            }
+            //var webRequest = WebRequest.Create("https://api.spacexdata.com/v4/payloads") as HttpWebRequest;
+            //if (webRequest == null)
+            //{
+            //    return payloads;
+            //}
 
-            webRequest.ContentType = "application/json";
-            webRequest.UserAgent = "Nothing";
+            //webRequest.ContentType = "application/json";
+            //webRequest.UserAgent = "Nothing";
 
 
 
             try
             {
 
-                using (var s = webRequest.GetResponse().GetResponseStream())
-                {
-                    using (var sr = new StreamReader(s))
-                    {
-                        var payloadsAsJson = sr.ReadToEnd();
-                        rootPayloads = JsonConvert.DeserializeObject<List<RootPayload>>(payloadsAsJson).ToList();
+                HttpClient client = new HttpClient();
+                HttpResponseMessage response = await client.GetAsync("https://api.spacexdata.com/v4/payloads");
+                response.EnsureSuccessStatusCode();
+                var responseBody = await response.Content.ReadAsStringAsync();
+                rootPayloads = JsonConvert.DeserializeObject<List<RootPayload>>(responseBody);
 
-                    }
-                }
+
+                //using (var s = await webRequest.GetResponseAsync())
+                //{
+                //    using (var sr = new StreamReader(s.GetResponseStream()))
+                //    {
+                //        var payloadsAsJson = await sr.ReadToEndAsync();
+                //        rootPayloads = JsonConvert.DeserializeObject<List<RootPayload>>(payloadsAsJson).ToList();
+
+                //    }
+                //}
 
 
                 try
@@ -202,14 +221,16 @@ namespace SpaceXLaunches.Services
                 //Sort the Payload list by Mass and then add indexing as the ranking, accounting for duplicate masses with the same rank
                 payloads.Sort((a, b) => b.Mass.Value.CompareTo(a.Mass.Value));
 
-                for (int i = 0; i < payloads.Count; i++)
+                var n = payloads.Count() - 1;
+                
+                for (int i = 0; i < n; i++)
                 {
                     if (i == 0)
                     {
                         payloads[i].Rank = 1;
                     }
 
-                    if (i > 0 && payloads[i].Mass == payloads[i - 1].Mass)
+                    else if (i > 0 && payloads[i].Mass == payloads[i - 1].Mass)
                     {
                         payloads[i].Rank = payloads[i - 1].Rank;
                     }
