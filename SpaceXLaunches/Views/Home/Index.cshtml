@@ -76,15 +76,4 @@
     <!-- JavaScript Bundle with Popper -->
 
     @*@await RenderSectionAsync("Scripts", required: false)*@
-    <script>
-
-        $(document).ready(function () {
-            $('#launchTable').DataTable(
-                {
-                    columnDefs: [
-                        { orderable: false, targets: 0, 1, 2, 3, 4, 5}
-                    ]
-
-                });
-        });
-    </script>
+    

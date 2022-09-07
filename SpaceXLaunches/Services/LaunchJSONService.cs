@@ -18,12 +18,12 @@ namespace SpaceXLaunches.Services
 
             List<RootLaunch> rootLaunches = new();
             List<Payload> payloads = new();
-            
+
             payloads = await GetPayloadRankAsync();
 
             try
             {
-                
+
                 var webRequest = WebRequest.Create("https://api.spacexdata.com/v4/launches") as HttpWebRequest;
                 if (webRequest == null)
                 {
@@ -34,85 +34,88 @@ namespace SpaceXLaunches.Services
                 webRequest.UserAgent = "Nothing";
 
 
-              
-                        using (var s = webRequest.GetResponse().GetResponseStream())
-                        {
-                            using (var sr = new StreamReader(s))
-                            {
-                                var launchesAsJson = sr.ReadToEnd();
-                                rootLaunches = JsonConvert.DeserializeObject<List<RootLaunch>>(launchesAsJson);
 
-                            }
-                        }
+                using (var response = await webRequest.GetResponseAsync())
+                {
+                    using (var responseStream = new StreamReader(response.GetResponseStream()))
+                    {
+                        var launchesAsJson = await responseStream.ReadToEndAsync();
+                        rootLaunches = JsonConvert.DeserializeObject<List<RootLaunch>>(launchesAsJson);
+                    }
+                }
 
-                
+
+
+
+
 
 
 
 
                 foreach (var data in rootLaunches)
                 {
-                    if (data.name != null)
+                if (data.name != null)
+                {
+                    var launchSingle = new Launch();
+
+                    launchSingle.Id = data.id.ToString();
+
+                    launchSingle.RocketName = data.name.ToString();
+
+                    //Use the original utc data for the LaunchTime
+                    var dateTimeString = data.date_utc.ToString();
+
+                    //Convert UTC to CST
+                    var CST = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
+                    var launchCSTDateTime = TimeZoneInfo.ConvertTimeFromUtc(data.date_utc, CST);
+                    var launchDateTime = launchCSTDateTime.ToString();
+                    var dateTimeSplit = launchDateTime.Split(' ');
+                    launchSingle.LaunchDate = launchCSTDateTime;
+                    launchSingle.LaunchTime = dateTimeSplit[1] + " " + dateTimeSplit[2];
+
+
+                    if (data.success != null)
                     {
-                        var launchSingle = new Launch();
-
-                        launchSingle.Id = data.id.ToString();
-
-                        launchSingle.RocketName = data.name.ToString();
-
-                        //Use the original utc data for the LaunchTime
-                        var dateTimeString = data.date_utc.ToString();
-
-                        //Convert UTC to CST
-                        var CST = TimeZoneInfo.FindSystemTimeZoneById("Central Standard Time");
-                        var launchCSTDateTime = TimeZoneInfo.ConvertTimeFromUtc(data.date_utc, CST);
-                        var launchDateTime = launchCSTDateTime.ToString();
-                        var dateTimeSplit = launchDateTime.Split(' ');
-                        launchSingle.LaunchDate = launchCSTDateTime;
-                        launchSingle.LaunchTime = dateTimeSplit[1] + " " + dateTimeSplit[2];
-
-
-                        if (data.success != null)
+                        if (data.success.ToString() == "true")
                         {
-                            if (data.success.ToString() == "true")
-                            {
-                                launchSingle.LaunchStatus = "Success!";
-                            }
-                            else if (data.success.ToString() == "false")
-                            {
-                                launchSingle.LaunchStatus = "Failed :(";
-                            }
-
+                            launchSingle.LaunchStatus = "Success!";
                         }
-                        else if (data.success is null)
+                        else if (data.success.ToString() == "false")
                         {
-                            launchSingle.LaunchStatus = "Null :/";
-
+                            launchSingle.LaunchStatus = "Failed :(";
                         }
 
-                        var tempMass = (payloads.Where(a => a.LaunchId == launchSingle.Id).Select(a => a.Mass.Value)).ToList();
-                        if (tempMass.Count() != 0)
-                        {
-                            launchSingle.PayloadMass = Convert.ToSingle(tempMass[0]);
-                        }
-
-                        var tempRank = (payloads.Where(a => a.LaunchId == launchSingle.Id).Select(a => a.Rank.Value)).ToList();
-                        if (tempRank.Count() != 0)
-                        {
-                            launchSingle.PayloadRank = Convert.ToInt32(tempRank[0]);
-                        }
-
-
-                        launchData.Add(launchSingle);
+                    }
+                    else if (data.success is null)
+                    {
+                        launchSingle.LaunchStatus = "Null :/";
 
                     }
 
+                    var tempMass = (payloads.Where(a => a.LaunchId == launchSingle.Id).Select(a => a.Mass.Value)).ToList();
+                    if (tempMass.Count() != 0)
+                    {
+                        launchSingle.PayloadMass = Convert.ToSingle(tempMass[0]);
+                    }
+
+                    var tempRank = (payloads.Where(a => a.LaunchId == launchSingle.Id).Select(a => a.Rank.Value)).ToList();
+                    if (tempRank.Count() != 0)
+                    {
+                        launchSingle.PayloadRank = Convert.ToInt32(tempRank[0]);
+                    }
+
+
+                    launchData.Add(launchSingle);
+
+                }
                 }
 
 
-               
+
+
+
                 launchData = launchData.OrderByDescending(x => x.LaunchDate).ToList();
-               
+
 
             }
             catch (Exception e)
@@ -120,8 +123,8 @@ namespace SpaceXLaunches.Services
                 Console.WriteLine(e);
 
             }
+                return launchData;
 
-            return launchData;
         }
 
         public async Task<List<Payload>> GetPayloadRankAsync()
